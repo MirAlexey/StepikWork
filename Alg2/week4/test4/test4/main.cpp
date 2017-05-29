@@ -379,7 +379,7 @@ public:
                 }
             }
             prev_p->_right =  prev_l;
-            prev_l->_parent = prev_p;
+            if(prev_l != NULL){prev_l->_parent = prev_p;}
             verifyTree(prev_p);
             delete node;
             return true;
