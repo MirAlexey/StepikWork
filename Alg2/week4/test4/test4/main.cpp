@@ -11,13 +11,16 @@ struct Data{
     static int b;
     static int max_key;
     int _key;
+    int sum;
 Data(){
 
     _key = 0;
+    sum = 0;
 }
 Data(int key){
 
     this->_key = key;
+    sum = key;
 }
 void Execute(){
     cout << _key;
@@ -38,7 +41,6 @@ bool operator >(Data data){
 bool operator <(Data data){
     return this->_key < data._key;
     }
-
 friend ostream& operator <<(ostream &s, Data* data);
 
 static void Exec(Data* data){
@@ -52,7 +54,6 @@ static void Exec(Data* data){
     Data::max_key = data->_key;
     }
 }
-
 
 };
 ostream& operator <<(ostream &s, Data* data){
@@ -73,6 +74,7 @@ struct Node{
       _data = new T();
       _height = 1;
       _size = 1;
+
   }
   Node(T* data){
       _data = data;
@@ -88,6 +90,10 @@ struct Node{
       if(this->_right == NULL) return 0;
       return this->_right->_height;
   }
+  int getHeight(){
+      if(this == NULL) return 0;
+      return this->_height;
+  }
   int getSizeLeft(){
       if(this->_left == NULL) return 0;
       return this->_left->_size;
@@ -96,34 +102,50 @@ struct Node{
       if(this->_right == NULL) return 0;
       return this->_right->_size;
   }
+  int getSize(){
+      if(this == NULL) return 0;
+      return this->_size;
+  }
+  T* getDataLeft(){
+      if(this->_left == NULL) return NULL;
+      return this->_left->_data;
+  }
+  T* getDataRight(){
+      if(this->_right == NULL) return NULL;
+      return this->_right->_data;
+  }
+  T* getData(){
+      if(this == NULL) return NULL;
+      return this->_data;
+  }
 
 };
 
+
+
 template<class T>
 class myTree{
+public:
+    typedef void (*funcDataUpdate)(T* d_data, T* s1_data, T* s2_data);
 private:
     bool updateHeight(Node<T> *node){
-       if(node == NULL) return false;
-       int max =0;
+        if(node == NULL) return false;
+        int max =0;
+        if(node->_left !=NULL) {max = node->_left->_height;}
+        if(node->_right != NULL && node->_right->_height > max) {max = node->_right->_height;}
+        node->_height = ++max;
 
-       int size = node->getSizeLeft() + node->getSizeRight() + 1;
+        if(this->f!=NULL){this->f(node->getData(),node->getDataLeft(),node->getDataRight());}
 
-       if(node->_left !=NULL) {max = node->_left->_height;}
-       if(node->_right != NULL && node->_right->_height > max) {max = node->_right->_height;}
-       //if (node->_height != ++max) {
-           node->_height = ++max;
-       //    b=true;
-       //}
-       //if(node->_size != size){
-          node->_size = size;
-       //   b=true;
-       //}
-       return true;
+        node->_size = node->getSizeLeft() + node->getSizeRight() + 1;
+
+        return true;
     }
 
-    bool verifyBalans(Node<T> *node){
-        if (node == NULL) return false;
+    Node<T>* verifyBalans(Node<T> *node){
+        if (node == NULL) return NULL;
         int delH = node->getHeightLeft() - node->getHeightRight();
+        updateHeight(node);
         if((delH<0?-delH:delH)>1){
             if(delH<0){
                 Node<T> *alpha = node;
@@ -148,6 +170,7 @@ private:
                     updateHeight(alpha);
                     updateHeight(beta);
                     updateHeight(beta->_parent);
+                    return beta;
                 }else{
                     gamma = beta->_left;
                     B = gamma->_left;
@@ -172,6 +195,7 @@ private:
                     updateHeight(beta);
                     updateHeight(gamma);
                     updateHeight(gamma->_parent);
+                    return gamma;
                 }
             }else{
                 Node<T> *alpha = node;
@@ -196,6 +220,7 @@ private:
                     updateHeight(alpha);
                     updateHeight(beta);
                     updateHeight(beta->_parent);
+                    return beta;
                 }else{
                     gamma = beta->_right;
                     B = gamma->_left;
@@ -220,11 +245,12 @@ private:
                     updateHeight(beta);
                     updateHeight(gamma);
                     updateHeight(gamma->_parent);
+                     return gamma;
                 }
             }
-            return true;
+
         }
-        return false;
+        return node;
     }
 
     void verifyTree(Node<T> *node){
@@ -237,15 +263,26 @@ private:
             }
 
     }
+    Node<T>* MergeWithRoot(Node<T> *min_node,Node<T> *max_node, Node<T> *t_node){
+        t_node->_left = min_node;
+        t_node->_right = max_node;
+        if(min_node != NULL){t_node->_left->_parent = t_node;}
+        if(max_node != NULL){t_node->_right->_parent = t_node;}
+        updateHeight(t_node);
+        return t_node;
+    }
 
 public:
     typedef void (*funcData)(T* data);
     Node<T> *_root;
+    funcDataUpdate f;
     myTree(){
         this->_root = NULL;
+        this->f = NULL;
     }
-    myTree(Node<T> *data){
+    myTree(Node<T> *data = NULL, funcDataUpdate f = NULL){
         this->_root = data;
+        this->f = f;
     }
     bool InOrder(funcData funcdata= NULL, Node<T> *node = NULL){
         Node<T> *data;
@@ -299,10 +336,10 @@ public:
         }
         return true;
     }
-    Node<T> *Root(){
+    Node<T>* Root(){
         return _root;
     }
-    Node<T> *FindNode(T *data,Node<T> *node  = NULL){
+    Node<T>* FindNode(T *data,Node<T> *node  = NULL){
         Node<T> *n;
         if (node == NULL){
             n = _root;
@@ -318,7 +355,7 @@ public:
         }
         return n;
     }
-    Node<T> *AddNode(Node<T> *new_node){
+    Node<T>* AddNode(Node<T> *new_node){
         Node<T> *node;
         Node<T> *node_parent;
         if(_root== NULL){
@@ -344,7 +381,7 @@ public:
         verifyTree(new_node->_parent);
         return new_node;
     }
-    bool DelNode(Node<T> *node){
+    Node<T>* DelNode(Node<T> *node, bool free_mem = true){
         if(node == NULL) return true;
         if(node->_left == NULL && node->_right == NULL){
             if(node->_parent == NULL){
@@ -357,8 +394,11 @@ public:
                 }
             }
             verifyTree(node->_parent);
-            delete node;
-            return true;
+            if(free_mem) {
+                delete node;
+                return NULL;
+            }
+            return node;
         }
         if(node->_left != NULL && node->_right != NULL){
             Node<T> *prev = Prev(node);
@@ -381,8 +421,11 @@ public:
             prev_p->_right =  prev_l;
             if(prev_l != NULL){prev_l->_parent = prev_p;}
             verifyTree(prev_p);
-            delete node;
-            return true;
+            if(free_mem) {
+                delete node;
+                return NULL;
+            }
+            return node;
         }
         if(node->_left == NULL){
             if(node->_parent == NULL){
@@ -397,8 +440,11 @@ public:
                 node->_right->_parent = node->_parent;
             }
             verifyTree(node->_parent);
-            delete node;
-            return true;
+            if(free_mem) {
+                delete node;
+                return NULL;
+            }
+            return node;
         }
         if(node->_parent == NULL){
             _root = node->_left;
@@ -412,8 +458,11 @@ public:
             node->_left->_parent = node->_parent;
         }
         verifyTree(node->_parent);
-        delete node;
-        return true;
+        if(free_mem) {
+            delete node;
+            return NULL;
+        }
+        return node;
     }
     Node<T>* Max(Node<T> *elem = NULL){
         Node<T> *node;
@@ -470,7 +519,65 @@ public:
             return Max(node->_left);
         }
     }
-
+    Node<T>* OrderStatistics(int k,Node<T> *node){
+        if(node == NULL) return NULL;
+        int leftsize = node->getSizeLeft();
+        if(k==leftsize+1){return node;}
+        if(k<leftsize+1){
+            return OrderStatistics(k,node->_left);
+        }else{
+            return OrderStatistics(k-leftsize-1,node->_right);
+        }
+    }
+    Node<T>* AVLMergeWithRoot(Node<T> *min_node,Node<T> *max_node, Node<T> *t_node){
+        if(min_node == NULL && max_node == NULL){
+            t_node->_left= t_node->_right = NULL;
+            t_node->_height=1;
+            return t_node;
+        }
+        int d = min_node->getHeight() - max_node->getHeight();
+        d=d<0?-d:d;
+        if(d<=1){
+            return MergeWithRoot(min_node,max_node,t_node);
+        }else{
+            if(min_node->getHeight() > max_node->getHeight()){
+                Node<T> *t = AVLMergeWithRoot(min_node->_right,max_node,t_node);
+                min_node->_right = t;
+                t->_parent = min_node;
+                return verifyBalans(min_node);
+            }else{
+                Node<T> *t = AVLMergeWithRoot(min_node,max_node->_left,t_node);
+                max_node->_left= t;
+                t->_parent = max_node;
+                return verifyBalans(max_node);
+            }
+        }
+    }
+    bool Split( T *key, Node<T> *source_node, Node<T>* &dest_min_node, Node<T>* &dest_max_node){
+        if(source_node == NULL){
+            dest_min_node = NULL;
+            dest_max_node = NULL;
+            return true;
+        }
+        if(*source_node->_data > *key){
+            Node<T> *node_min = NULL;
+            Node<T> *node_max = NULL;
+            Split(key, source_node->_left,node_min,node_max);
+            dest_max_node = AVLMergeWithRoot(node_max,source_node->_right,source_node);
+            dest_min_node = node_min;
+            return true;
+        }else{
+            Node<T> *node_min = NULL;
+            Node<T> *node_max = NULL;
+            Split(key, source_node->_right,node_min,node_max);
+            dest_min_node = AVLMergeWithRoot(source_node->_left,node_min,source_node);
+            dest_max_node = node_max;
+            return true;
+        }
+    }
+    Node<T>& operator[](int k){
+        return OrderStatistics(k, _root);
+    }
 };
 int Data::b = -1;
 int Data::max_key=0;
@@ -506,6 +613,14 @@ bool IsCorrect(myTree<Data> *tree, Data *d, Node<Data> *n){
         return false;
     }
     return IsCorrect(tree,d,node->_right);
+}
+
+void UpdateSum(Data* d_data, Data *s1_data, Data *s2_data){
+    if (d_data == NULL) return;
+    int sum = d_data->_key;
+    if (s1_data != NULL){sum += s1_data->sum;}
+    if (s2_data != NULL){sum += s2_data->sum;}
+    d_data->sum = sum;
 }
 
 
@@ -571,15 +686,21 @@ int main()
     for(int i=0;i<10;i++){
         arrNode[i]=NULL;
     }
-    myTree<Data> *mytree = new myTree<Data>();
-    int m[]={5,1,10,9,11,8,12,7,6,4,3};
-    for(int i = 0; i< 11; i++){
+    myTree<Data> *mytree = new myTree<Data>(NULL, UpdateSum);
+    int m[]={4,2,6,1,3,5,7,7,6,4,3};
+    for(int i = 0; i< 7; i++){
         arrNode[i] =new Node<Data>(new Data(m[i]));
         mytree->AddNode(arrNode[i]);
     }
-    mytree->DelNode(mytree->FindNode(new Data(12)));
-    mytree->DelNode(mytree->FindNode(new Data(11)));
-    mytree->DelNode(mytree->FindNode(new Data(9)));
+    Node<Data> *min_node = NULL;
+    Node<Data> *max_node = NULL;
+    mytree->Split(new Data(4),mytree->Root(),min_node,max_node);
+    Node<Data> *min_node2 = NULL;
+    Node<Data> *max_node2 = NULL;
+    delete mytree;
+    mytree = new myTree<Data>(min_node,UpdateSum);
+    mytree->Split(new Data(1),mytree->Root(),min_node2,max_node2);
+
 
 return 0;
 }
