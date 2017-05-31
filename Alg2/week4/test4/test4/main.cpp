@@ -263,13 +263,20 @@ private:
             }
 
     }
-    Node<T>* MergeWithRoot(Node<T> *min_node,Node<T> *max_node, Node<T> *t_node){
+    Node<T>* MergeWithRoot(Node<T>* min_node,Node<T>* max_node, Node<T>* t_node){
         t_node->_left = min_node;
         t_node->_right = max_node;
         if(min_node != NULL){t_node->_left->_parent = t_node;}
         if(max_node != NULL){t_node->_right->_parent = t_node;}
         updateHeight(t_node);
         return t_node;
+    }
+
+    Node<T>* GetLeftWithRoot(){
+
+    }
+    Node<T>* GetRightWithoutRoot(){
+
     }
 
 public:
@@ -398,6 +405,7 @@ public:
                 delete node;
                 return NULL;
             }
+            node->_left = node->_right = node->_parent = NULL;
             return node;
         }
         if(node->_left != NULL && node->_right != NULL){
@@ -425,6 +433,7 @@ public:
                 delete node;
                 return NULL;
             }
+            node->_left = node->_right = node->_parent = NULL;
             return node;
         }
         if(node->_left == NULL){
@@ -444,6 +453,7 @@ public:
                 delete node;
                 return NULL;
             }
+            node->_left = node->_right = node->_parent = NULL;
             return node;
         }
         if(node->_parent == NULL){
@@ -462,6 +472,7 @@ public:
             delete node;
             return NULL;
         }
+        node->_left = node->_right = node->_parent = NULL;
         return node;
     }
     Node<T>* Max(Node<T> *elem = NULL){
@@ -529,7 +540,7 @@ public:
             return OrderStatistics(k-leftsize-1,node->_right);
         }
     }
-    Node<T>* AVLMergeWithRoot(Node<T> *min_node,Node<T> *max_node, Node<T> *t_node){
+    Node<T>* AVLMergeWithRoot(Node<T>* min_node,Node<T>* max_node, Node<T>* t_node){
         if(min_node == NULL && max_node == NULL){
             t_node->_left= t_node->_right = NULL;
             t_node->_height=1;
@@ -553,25 +564,33 @@ public:
             }
         }
     }
-    bool Split( T *key, Node<T> *source_node, Node<T>* &dest_min_node, Node<T>* &dest_max_node){
+    bool Split( T *key, Node<T>* &source_node, Node<T>* &dest_min_node, Node<T>* &dest_max_node){
         if(source_node == NULL){
             dest_min_node = NULL;
             dest_max_node = NULL;
             return true;
         }
-        if(*source_node->_data > *key){
+        Node<T> *source_left = source_node->_left;
+        Node<T> *source_right = source_node->_right;
+        if(source_left != NULL) {source_left->_parent = NULL;}
+        if(source_right != NULL) {source_right->_parent = NULL;}
+        if(*key < *source_node->_data){
             Node<T> *node_min = NULL;
             Node<T> *node_max = NULL;
-            Split(key, source_node->_left,node_min,node_max);
-            dest_max_node = AVLMergeWithRoot(node_max,source_node->_right,source_node);
-            dest_min_node = node_min;
+            Split(key, source_left,node_min,node_max);
+            dest_max_node = AVLMergeWithRoot(node_max,source_right,source_node);
+            dest_max_node->_parent =NULL;
+            dest_min_node = verifyBalans(node_min);
+            if(dest_min_node != NULL){dest_min_node->_parent =NULL;}
             return true;
         }else{
             Node<T> *node_min = NULL;
             Node<T> *node_max = NULL;
-            Split(key, source_node->_right,node_min,node_max);
-            dest_min_node = AVLMergeWithRoot(source_node->_left,node_min,source_node);
-            dest_max_node = node_max;
+            Split(key, source_right,node_min,node_max);
+            dest_min_node = AVLMergeWithRoot(source_left,node_min,source_node);
+            dest_min_node->_parent =NULL;
+            dest_max_node = verifyBalans(node_max);
+            if(dest_max_node != NULL){dest_max_node->_parent =NULL;}
             return true;
         }
     }
@@ -694,12 +713,14 @@ int main()
     }
     Node<Data> *min_node = NULL;
     Node<Data> *max_node = NULL;
-    mytree->Split(new Data(4),mytree->Root(),min_node,max_node);
+    Node<Data> *source = mytree->Root();
+    mytree->Split(new Data(4),source,min_node,max_node);
     Node<Data> *min_node2 = NULL;
     Node<Data> *max_node2 = NULL;
     delete mytree;
     mytree = new myTree<Data>(min_node,UpdateSum);
-    mytree->Split(new Data(1),mytree->Root(),min_node2,max_node2);
+    source = mytree->Root();
+    mytree->Split(new Data(1),source,min_node2,max_node2);
 
 
 return 0;
