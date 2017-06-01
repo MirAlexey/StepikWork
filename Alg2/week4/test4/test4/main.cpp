@@ -9,9 +9,9 @@ using namespace std;
 
 struct Data{
     static int b;
-    static int max_key;
-    int _key;
-    int sum;
+    static long max_key;
+    long _key;
+    long sum;
 Data(){
 
     _key = 0;
@@ -262,6 +262,7 @@ private:
             }
     }
     Node<T>* MergeWithRoot(Node<T>* min_node,Node<T>* max_node, Node<T>* t_node){
+        if(t_node == NULL) {return max_node;}
         t_node->_left = min_node;
         t_node->_right = max_node;
         if(min_node != NULL){t_node->_left->_parent = t_node;}
@@ -281,68 +282,69 @@ public:
         this->_root = data;
         this->f = f;
     }
-    bool InOrder(funcData funcdata= NULL, Node<T> *node = NULL){
-        Node<T> *data;
+    bool InOrder(Node<T> *node, funcData funcdata= NULL){
         if (node == NULL){
-            data = _root;
-        }else{
-            data = node;
+            return false;
         }
-        if(data == NULL) {return false;}
-        if(data->_left != NULL){InOrder(funcdata, data->_left);}
+        Node<T> *data;
+        data = node;
+        if(data->_left != NULL){InOrder(data->_left, funcdata );}
         if(funcdata){
             funcdata(data->_data);
         }else{
             cout << data->_data;
         }
-        if(data->_right != NULL){InOrder(funcdata, data->_right);}
+        if(data->_right != NULL){InOrder(data->_right, funcdata );}
         return true;
     }
-    bool PreOrder(funcData funcdata = NULL,Node<T> *node = NULL){
-        Node<T> *data;
+    bool InOrder(funcData funcdata = NULL){
+        return InOrder(_root,funcdata);
+    }
+    bool PreOrder(Node<T> *node,funcData funcdata = NULL){
         if (node == NULL){
-            data = _root;
-        }else{
-            data = node;
+            return false;
         }
-        if(data == NULL) {return false;}
+        Node<T> *data;
+        data = node;
         if(funcdata){
             funcdata(data->_data);
         }else{
             cout << data->_data;
         }
-        if(data->_left != NULL){PreOrder(funcdata,data->_left);}
-        if(data->_right != NULL){PreOrder(funcdata,data->_right);}
-
+        if(data->_left != NULL){PreOrder(data->_left, funcdata);}
+        if(data->_right != NULL){PreOrder(data->_right, funcdata);}
         return true;
     }
-    bool PostOrder(funcData funcdata= NULL,Node<T> *node = NULL){
-        Node<T> *data;
+    bool PreOrder(funcData funcdata = NULL){
+        return PreOrder(_root,funcdata);
+    }
+    bool PostOrder(Node<T> *node,funcData funcdata= NULL){
         if (node == NULL){
-            data = _root;
-        }else{
-            data = node;
+            return false;
         }
-        if(data == NULL) {return false;}
-        if(data->_left != NULL){PostOrder(funcdata,data->_left);}
-        if(data->_right != NULL){PostOrder(funcdata,data->_right);}
+        Node<T> *data;
+        data = node;
+        if(data->_left != NULL){PostOrder(data->_left,funcdata);}
+        if(data->_right != NULL){PostOrder(data->_right,funcdata);}
         if(funcdata){
             funcdata(data->_data);
         }else{
             cout << data->_data;
         }
         return true;
+    }
+    bool PostOrder(funcData funcdata= NULL){
+        return PostOrder(_root,funcdata);
     }
     Node<T>* Root(){
         return _root;
     }
-    Node<T>* FindNode(T *data,Node<T> *node  = NULL){
-        Node<T> *n;
+    Node<T>* FindNode(T *data,Node<T> *node){
         if (node == NULL){
-            n = _root;
-        }else{
-            n = node;
+            return NULL;
         }
+        Node<T> *n;
+        n = node;
         while(n != NULL && *n->_data != *data){
             if (*n->_data > *data){
                 n = n->_left;
@@ -351,6 +353,9 @@ public:
             }
         }
         return n;
+    }
+    Node<T>* FindNode(T *data){
+        return FindNode(data, _root);
     }
     Node<T>* AddNode(Node<T> *new_node){
         Node<T> *node;
@@ -476,10 +481,10 @@ public:
         }
         return node;
     }
-    Node<T>Max(){
+    Node<T>* Max(){
         return Max(_root);
     }
-    Node<T>* Min(Node<T> *elem = NULL){
+    Node<T>* Min(Node<T> *elem){
         if (elem == NULL){
             return NULL;
         }
@@ -490,14 +495,14 @@ public:
         }
         return node;
     }
-    Node<T>Min(){
+    Node<T>* Min(){
         return Min(_root);
     }
-    Node<T>* Next(Node<T> *elem = NULL){
-        Node<T> *node;
+    Node<T>* Next(Node<T> *elem){
         if (elem == NULL){
-            node = _root;
+           return NULL;
         }
+        Node<T> *node;
         node = elem;
         if(node->_right == NULL){
             while (node->_parent != NULL && node->_parent->_right == node) {
@@ -509,11 +514,14 @@ public:
         }
 
     }
-    Node<T>* Prev(Node<T> *elem = NULL){
-        Node<T> *node;
+    Node<T>* Next(){
+        return Next(_root);
+    }
+    Node<T>* Prev(Node<T> *elem){
         if (elem == NULL){
-            node = _root;
+           return NULL;
         }
+        Node<T> *node;
         node = elem;
         if(node->_left == NULL){
             while (node->_parent != NULL && node->_parent->_left == node) {
@@ -523,6 +531,9 @@ public:
         }else{
             return Max(node->_left);
         }
+    }
+    Node<T>* Prev(){
+        return Prev(_root);
     }
     Node<T>* OrderStatistics(int k,Node<T> *node){
         if(node == NULL) return NULL;
@@ -569,6 +580,9 @@ public:
         Node<T> *source_right = source_node->_right;
         if(source_left != NULL) {source_left->_parent = NULL;}
         if(source_right != NULL) {source_right->_parent = NULL;}
+        source_node->_left = NULL;
+        source_node->_right = NULL;
+        updateHeight(source_node);
         if(*key < *source_node->_data){
             Node<T> *node_min = NULL;
             Node<T> *node_max = NULL;
@@ -594,7 +608,7 @@ public:
     }
 };
 int Data::b = -1;
-int Data::max_key=0;
+long Data::max_key=0;
 vector<Data*> arr;
 
 void ExecF(Data* data){
@@ -635,6 +649,10 @@ void UpdateSum(Data* d_data, Data *s1_data, Data *s2_data){
     if (s1_data != NULL){sum += s1_data->sum;}
     if (s2_data != NULL){sum += s2_data->sum;}
     d_data->sum = sum;
+}
+
+int foo(int s, int x){
+    return (x+s)%1000000001;
 }
 
 
@@ -717,7 +735,8 @@ int main()
     source = mytree->Root();
     mytree->Split(new Data(1),source,min_node2,max_node2);*/
 
-    int n, x, y;
+    long n, x, y;
+    long s=0;
     cin >> n;
     string str;
 
@@ -727,32 +746,38 @@ int main()
         cin >> str;
         cin >> x;
         if(str == "+"){
-            mytree->AddNode(new Node<Data>(new Data(x)));
+            if(mytree->FindNode(new Data(foo(s,x))) == NULL){mytree->AddNode(new Node<Data>(new Data(foo(s,x))));}
         }else if(str == "-"){
-            mytree->DelNode(mytree->FindNode(new Data(x)));
+            mytree->DelNode(mytree->FindNode(new Data(foo(s,x))));
         }else if(str == "?"){
-            if(mytree->FindNode(new Data(x)) == NULL){cout << "Not found"<<endl;}
+            if(mytree->FindNode(new Data(foo(s,x))) == NULL){cout << "Not found"<<endl;}
             else{cout << "Found"<<endl;}
         }else if(str == "s"){
             cin >> y;
-            Node<Data> *left_t;
-            Node<Data> *right_t;
-            Node<Data> *center_right_t;
-            Node<Data> *center_t;
+            Node<Data> *left_t = NULL;
+            Node<Data> *right_t = NULL;
+            Node<Data> *center_right_t = NULL;
+            Node<Data> *center_t= NULL;
             Node<Data> *source = mytree->Root();
-            mytree->Split(new Data(x-1),source,left_t,center_right_t);
-            delete mytree;
-            mytree = new myTree<Data>(center_right_t, UpdateSum);
-            mytree->Split(new Data(y),center_right_t,center_t,right_t);
-            cout<< center_t->_data->sum;
+            mytree->Split(new Data(foo(s,x)-1),source,left_t,center_right_t);
+           /* delete mytree;
+            mytree = new myTree<Data>(center_right_t, UpdateSum);*/
+            mytree->_root = center_right_t;
+            mytree->Split(new Data(foo(s,y)),center_right_t,center_t,right_t);
+
+            if(center_t==NULL){
+                s = 0;
+            }else{
+                s = center_t->_data->sum;
+            }
+            cout<< s << endl;
+            mytree->_root = left_t;
             Node<Data> *t_key = mytree->DelNode(mytree->Max(left_t),false);
-            Node<Data> *acum = mytree->AVLMergeWithRoot(left_t,center_t, t_key);
-            delete mytree;
-            mytree = new myTree<Data>(acum, UpdateSum);
+            Node<Data> *acum = mytree->AVLMergeWithRoot(mytree->_root,center_t, t_key);
+            mytree->_root = acum;
             t_key = mytree->DelNode(mytree->Max(acum),false);
-            acum = mytree->AVLMergeWithRoot(acum,right_t,t_key);
-            delete mytree;
-            mytree = new myTree<Data>(acum, UpdateSum);
+            acum = mytree->AVLMergeWithRoot(mytree->_root,right_t,t_key);
+            mytree->_root = acum;
         }
 
 
