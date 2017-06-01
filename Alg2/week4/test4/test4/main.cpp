@@ -141,7 +141,6 @@ private:
 
         return true;
     }
-
     Node<T>* verifyBalans(Node<T> *node){
         if (node == NULL) return NULL;
         int delH = node->getHeightLeft() - node->getHeightRight();
@@ -252,8 +251,8 @@ private:
         }
         return node;
     }
-
     void verifyTree(Node<T> *node){
+            if (node == NULL) return;
             updateHeight(node);
             verifyBalans(node);
             if(node->_parent == NULL){
@@ -261,7 +260,6 @@ private:
             }else{
             verifyTree(node->_parent);
             }
-
     }
     Node<T>* MergeWithRoot(Node<T>* min_node,Node<T>* max_node, Node<T>* t_node){
         t_node->_left = min_node;
@@ -271,14 +269,6 @@ private:
         updateHeight(t_node);
         return t_node;
     }
-
-    Node<T>* GetLeftWithRoot(){
-
-    }
-    Node<T>* GetRightWithoutRoot(){
-
-    }
-
 public:
     typedef void (*funcData)(T* data);
     Node<T> *_root;
@@ -389,7 +379,7 @@ public:
         return new_node;
     }
     Node<T>* DelNode(Node<T> *node, bool free_mem = true){
-        if(node == NULL) return true;
+        if(node == NULL) return NULL;
         if(node->_left == NULL && node->_right == NULL){
             if(node->_parent == NULL){
                 _root= NULL;
@@ -475,29 +465,33 @@ public:
         node->_left = node->_right = node->_parent = NULL;
         return node;
     }
-    Node<T>* Max(Node<T> *elem = NULL){
-        Node<T> *node;
+    Node<T>* Max(Node<T> *elem){
         if (elem == NULL){
-            node = _root;
+            return NULL;
         }
+        Node<T> *node;
         node = elem;
         while(node->_right != NULL){
             node = node->_right;
         }
         return node;
-
+    }
+    Node<T>Max(){
+        return Max(_root);
     }
     Node<T>* Min(Node<T> *elem = NULL){
-        Node<T> *node;
         if (elem == NULL){
-            node = _root;
+            return NULL;
         }
+        Node<T> *node;
         node = elem;
         while(node->_left != NULL){
             node = node->_left;
         }
         return node;
-
+    }
+    Node<T>Min(){
+        return Min(_root);
     }
     Node<T>* Next(Node<T> *elem = NULL){
         Node<T> *node;
@@ -542,6 +536,7 @@ public:
     }
     Node<T>* AVLMergeWithRoot(Node<T>* min_node,Node<T>* max_node, Node<T>* t_node){
         if(min_node == NULL && max_node == NULL){
+            if(t_node == NULL) return NULL;
             t_node->_left= t_node->_right = NULL;
             t_node->_height=1;
             return t_node;
@@ -554,12 +549,12 @@ public:
             if(min_node->getHeight() > max_node->getHeight()){
                 Node<T> *t = AVLMergeWithRoot(min_node->_right,max_node,t_node);
                 min_node->_right = t;
-                t->_parent = min_node;
+                if(t != NULL) {t->_parent = min_node;}
                 return verifyBalans(min_node);
             }else{
                 Node<T> *t = AVLMergeWithRoot(min_node,max_node->_left,t_node);
                 max_node->_left= t;
-                t->_parent = max_node;
+                if(t != NULL) {t->_parent = max_node;}
                 return verifyBalans(max_node);
             }
         }
@@ -701,7 +696,7 @@ int main()
 
     cout<< (b?"CORRECT":"INCORRECT");*/
     //--------------------------    ----------------------
-    Node<Data> **arrNode = new Node<Data>*[10];
+   /* Node<Data> **arrNode = new Node<Data>*[10];
     for(int i=0;i<10;i++){
         arrNode[i]=NULL;
     }
@@ -720,7 +715,50 @@ int main()
     delete mytree;
     mytree = new myTree<Data>(min_node,UpdateSum);
     source = mytree->Root();
-    mytree->Split(new Data(1),source,min_node2,max_node2);
+    mytree->Split(new Data(1),source,min_node2,max_node2);*/
+
+    int n, x, y;
+    cin >> n;
+    string str;
+
+    myTree<Data> *mytree = new myTree<Data>(NULL, UpdateSum);
+
+    for(int i=0;i<n;i++){
+        cin >> str;
+        cin >> x;
+        if(str == "+"){
+            mytree->AddNode(new Node<Data>(new Data(x)));
+        }else if(str == "-"){
+            mytree->DelNode(mytree->FindNode(new Data(x)));
+        }else if(str == "?"){
+            if(mytree->FindNode(new Data(x)) == NULL){cout << "Not found"<<endl;}
+            else{cout << "Found"<<endl;}
+        }else if(str == "s"){
+            cin >> y;
+            Node<Data> *left_t;
+            Node<Data> *right_t;
+            Node<Data> *center_right_t;
+            Node<Data> *center_t;
+            Node<Data> *source = mytree->Root();
+            mytree->Split(new Data(x-1),source,left_t,center_right_t);
+            delete mytree;
+            mytree = new myTree<Data>(center_right_t, UpdateSum);
+            mytree->Split(new Data(y),center_right_t,center_t,right_t);
+            cout<< center_t->_data->sum;
+            Node<Data> *t_key = mytree->DelNode(mytree->Max(left_t),false);
+            Node<Data> *acum = mytree->AVLMergeWithRoot(left_t,center_t, t_key);
+            delete mytree;
+            mytree = new myTree<Data>(acum, UpdateSum);
+            t_key = mytree->DelNode(mytree->Max(acum),false);
+            acum = mytree->AVLMergeWithRoot(acum,right_t,t_key);
+            delete mytree;
+            mytree = new myTree<Data>(acum, UpdateSum);
+        }
+
+
+    }
+
+
 
 
 return 0;
