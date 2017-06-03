@@ -9,17 +9,17 @@ using namespace std;
 
 struct Data{
     static int b;
-    static long max_key;
-    long _key;
-    long sum;
+    static long long max_key;
+    long long _key;
+    long long sum;
 Data(){
 
     _key = 0;
     sum = 0;
 }
-Data(int key){
+Data(long long key){
 
-    this->_key = key;
+    _key = key;
     sum = key;
 }
 void Execute(){
@@ -230,7 +230,7 @@ private:
                     alpha->_left = C;
                     beta->_right =B;
                     if(B!= NULL){B->_parent = beta;}
-                    if(B!= NULL){C->_parent = alpha;}
+                    if(C!= NULL){C->_parent = alpha;}
                     gamma->_left = beta;
                     gamma->_right = alpha;
                     if(gamma->_parent != NULL){
@@ -385,6 +385,7 @@ public:
     }
     Node<T>* DelNode(Node<T> *node, bool free_mem = true){
         if(node == NULL) return NULL;
+        // --- лист
         if(node->_left == NULL && node->_right == NULL){
             if(node->_parent == NULL){
                 _root= NULL;
@@ -394,8 +395,8 @@ public:
                 }else{
                     node->_parent->_right = NULL;
                 }
+               verifyTree(node->_parent);
             }
-            verifyTree(node->_parent);
             if(free_mem) {
                 delete node;
                 return NULL;
@@ -403,15 +404,39 @@ public:
             node->_left = node->_right = node->_parent = NULL;
             return node;
         }
+        //---- оба дерева не null
         if(node->_left != NULL && node->_right != NULL){
-            Node<T> *prev = Prev(node);
-            Node<T> *prev_l = prev->_left;
-            Node<T> *prev_p = prev->_parent;
+            Node<T> *prev = Max(node->_left);
+            //----- максимальный элемент в левом поддереве -> левый сын
+            if(node->_left == prev){
+                prev->_right = node->_right;
+                prev->_right->_parent = prev;
+                prev->_parent = node->_parent;
+                if(prev->_parent == NULL){
+                    _root = prev;
+                }else{
+                    if(prev->_parent->_left == node){
+                       prev->_parent->_left = prev;
+                    }else{
+                       prev->_parent->_right = prev;
+                    }
+                }
+                verifyTree(prev);
+                if(free_mem) {
+                    delete node;
+                    return NULL;
+                }
+                node->_left = node->_right = node->_parent = NULL;
+                return node;
+            }
+            //-------
+            Node<T> *Pprev = prev->_parent;
+            Pprev->_right = prev->_left;
+            if(Pprev->_right != NULL){Pprev->_right->_parent = Pprev;}
+
             prev->_parent = node->_parent;
             prev->_left = node->_left;
             prev->_right = node->_right;
-            node->_left->_parent = prev;
-            node->_right->_parent = prev;
             if(prev->_parent == NULL){
                 _root = prev;
             }else{
@@ -421,9 +446,10 @@ public:
                    prev->_parent->_right = prev;
                 }
             }
-            prev_p->_right =  prev_l;
-            if(prev_l != NULL){prev_l->_parent = prev_p;}
-            verifyTree(prev_p);
+            prev->_left->_parent = prev;
+            prev->_right->_parent = prev;
+
+            verifyTree(Pprev);
             if(free_mem) {
                 delete node;
                 return NULL;
@@ -431,6 +457,7 @@ public:
             node->_left = node->_right = node->_parent = NULL;
             return node;
         }
+        //----------- левое дерево null
         if(node->_left == NULL){
             if(node->_parent == NULL){
                 _root = node->_right;
@@ -442,8 +469,8 @@ public:
                    node->_parent->_right = node->_right;
                 }
                 node->_right->_parent = node->_parent;
+                verifyTree(node->_parent);
             }
-            verifyTree(node->_parent);
             if(free_mem) {
                 delete node;
                 return NULL;
@@ -451,6 +478,8 @@ public:
             node->_left = node->_right = node->_parent = NULL;
             return node;
         }
+
+        //-----------правое дерево null
         if(node->_parent == NULL){
             _root = node->_left;
             node->_left->_parent = NULL;
@@ -461,8 +490,8 @@ public:
                node->_parent->_right = node->_left;
             }
             node->_left->_parent = node->_parent;
+            verifyTree(node->_parent);
         }
-        verifyTree(node->_parent);
         if(free_mem) {
             delete node;
             return NULL;
@@ -608,7 +637,7 @@ public:
     }
 };
 int Data::b = -1;
-long Data::max_key=0;
+long long Data::max_key=0;
 vector<Data*> arr;
 
 void ExecF(Data* data){
@@ -645,13 +674,13 @@ bool IsCorrect(myTree<Data> *tree, Data *d, Node<Data> *n){
 
 void UpdateSum(Data* d_data, Data *s1_data, Data *s2_data){
     if (d_data == NULL) return;
-    int sum = d_data->_key;
+    long long sum = d_data->_key;
     if (s1_data != NULL){sum += s1_data->sum;}
     if (s2_data != NULL){sum += s2_data->sum;}
     d_data->sum = sum;
 }
 
-int foo(int s, int x){
+long long foo(long long s, long long x){
     return (x+s)%1000000001;
 }
 
@@ -735,8 +764,8 @@ int main()
     source = mytree->Root();
     mytree->Split(new Data(1),source,min_node2,max_node2);*/
 
-    long n, x, y;
-    long s=0;
+    long long n, x, y;
+    long long s=0;
     cin >> n;
     string str;
 
@@ -746,25 +775,27 @@ int main()
         cin >> str;
         cin >> x;
         if(str == "+"){
-            if(mytree->FindNode(new Data(foo(s,x))) == NULL){mytree->AddNode(new Node<Data>(new Data(foo(s,x))));}
+            x = foo(s,x);
+            if(mytree->FindNode(new Data(x)) == NULL){mytree->AddNode(new Node<Data>(new Data(x)));}
         }else if(str == "-"){
-            mytree->DelNode(mytree->FindNode(new Data(foo(s,x))));
+            x = foo(s,x);
+            mytree->DelNode(mytree->FindNode(new Data(x)));
         }else if(str == "?"){
-            if(mytree->FindNode(new Data(foo(s,x))) == NULL){cout << "Not found"<<endl;}
+            x = foo(s,x);
+            if(mytree->FindNode(new Data(x)) == NULL){cout << "Not found"<<endl;}
             else{cout << "Found"<<endl;}
         }else if(str == "s"){
+            x = foo(s,x);
             cin >> y;
+            y = foo(s,y);
             Node<Data> *left_t = NULL;
             Node<Data> *right_t = NULL;
             Node<Data> *center_right_t = NULL;
             Node<Data> *center_t= NULL;
             Node<Data> *source = mytree->Root();
-            mytree->Split(new Data(foo(s,x)-1),source,left_t,center_right_t);
-           /* delete mytree;
-            mytree = new myTree<Data>(center_right_t, UpdateSum);*/
+            mytree->Split(new Data(x-1),source,left_t,center_right_t);
             mytree->_root = center_right_t;
-            mytree->Split(new Data(foo(s,y)),center_right_t,center_t,right_t);
-
+            mytree->Split(new Data(y),center_right_t,center_t,right_t);
             if(center_t==NULL){
                 s = 0;
             }else{
@@ -778,9 +809,11 @@ int main()
             t_key = mytree->DelNode(mytree->Max(acum),false);
             acum = mytree->AVLMergeWithRoot(mytree->_root,right_t,t_key);
             mytree->_root = acum;
+
         }
-
-
+//cout<< "tree  :  ";
+//    mytree->InOrder();
+//             cout << endl;
     }
 
 
