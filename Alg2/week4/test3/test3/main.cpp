@@ -1,8 +1,10 @@
 #include <iostream>
 #include <ostream>
+#include <vector>
 
 
 using namespace std;
+
 
 
 struct Data{
@@ -27,6 +29,9 @@ bool operator()(){
 bool operator ==(Data data){
     return this->_key == data._key;
     }
+bool operator !=(Data data){
+    return this->_key != data._key;
+    }
 bool operator >(Data data){
     return this->_key > data._key;
     }
@@ -47,6 +52,7 @@ static void Exec(Data* data){
     Data::max_key = data->_key;
     }
 }
+
 
 };
 ostream& operator <<(ostream &s, Data* data){
@@ -138,16 +144,21 @@ public:
     Node<T> *Root(){
         return _root;
     }
-    Node<T> *FindNode(T *data){
-        Node<T> *node;
-        while(node != NULL && node->_data != data){
-            if (node->_data > data){
-                node = node->_left;
+    Node<T> *FindNode(T *data,Node<T> *node  = NULL){
+        Node<T> *n;
+        if (node == NULL){
+            n = _root;
+        }else{
+            n = node;
+        }
+        while(n != NULL && *n->_data != *data){
+            if (*n->_data > *data){
+                n = n->_left;
             }else{
-                node = node->_right;
+                n = n->_right;
             }
         }
-        return node;
+        return n;
     }
     Node<T> *AddNode(Node<T> *new_node){
         Node<T> *node;
@@ -177,6 +188,40 @@ public:
 };
 int Data::b = -1;
 int Data::max_key=0;
+vector<Data*> arr;
+
+void ExecF(Data* data){
+    if(Data::b < 0) {
+        Data::b = 0;
+        Data::max_key = data->_key;
+    }else{
+    if(data->_key < Data::max_key){
+        Data::b++;
+    }
+    if(data->_key == Data::max_key){
+        if (arr.size() !=0){
+            Data* d = arr.back();
+            if(d->_key != data->_key){
+                arr.push_back(data);
+            }
+        }else{
+            arr.push_back(data);
+        }
+    }
+    Data::max_key = data->_key;
+    }
+}
+
+bool IsCorrect(myTree<Data> *tree, Data *d, Node<Data> *n){
+    if(d == NULL || n == NULL || tree == NULL){return true;}
+    Node<Data> *node = tree->FindNode(d, n);
+    if(node == NULL || node->_left == NULL){return true;}
+    if(tree->FindNode(d, node->_left) != NULL){
+        return false;
+    }
+    return IsCorrect(tree,d,node->_right);
+}
+
 
 int main()
 {
@@ -219,16 +264,23 @@ int main()
     myTree<Data> *mytree = new myTree<Data>(arrNode[0]);
 
 
-    mytree->InOrder(Data::Exec);
+    mytree->InOrder(ExecF);
 
     if(Data::b<0){
         cout<< "ERROR";
-    }else{
-        if(Data::b == 0){
-            cout<< "CORRECT";
-        }else{
-            cout<< "INCORRECT";
-        }
+        return 0;
     }
+    if(Data::b > 0){
+        cout<< "INCORRECT";
+        return 0;
+    }
+    bool b = true;
+    for (int i =0;i< arr.size();i++){
+        b&=IsCorrect(mytree, arr[i], mytree->Root());
+    }
+
+    cout<< (b?"CORRECT":"INCORRECT");
+
+
 return 0;
 }
