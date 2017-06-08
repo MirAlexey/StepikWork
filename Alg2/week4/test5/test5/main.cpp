@@ -56,8 +56,8 @@ static void Exec(Data* data){
 }
 
 };
-ostream& operator <<(ostream &s, Data* data){
-    return  s << data->_key<< " ";
+ostream& operator <<(ostream &s, Data data){
+    return  s << data._key<< " ";
 }
 
 
@@ -251,6 +251,20 @@ private:
         }
         return node;
     }
+
+    Node<T>* MergeWithRoot(Node<T>* min_node,Node<T>* max_node, Node<T>* t_node){
+        if(t_node == NULL) {
+            updateHeight(max_node);
+            return max_node;
+        }
+        t_node->_left = min_node;
+        t_node->_right = max_node;
+        if(min_node != NULL){t_node->_left->_parent = t_node;}
+        if(max_node != NULL){t_node->_right->_parent = t_node;}
+        updateHeight(t_node);
+        return t_node;
+    }
+protected:
     void verifyTree(Node<T> *node){
             if (node == NULL) return;
             updateHeight(node);
@@ -261,14 +275,24 @@ private:
             verifyTree(node->_parent);
             }
     }
-    Node<T>* MergeWithRoot(Node<T>* min_node,Node<T>* max_node, Node<T>* t_node){
-        if(t_node == NULL) {return max_node;}
-        t_node->_left = min_node;
-        t_node->_right = max_node;
-        if(min_node != NULL){t_node->_left->_parent = t_node;}
-        if(max_node != NULL){t_node->_right->_parent = t_node;}
-        updateHeight(t_node);
-        return t_node;
+    virtual bool CompareNode(Node<T>* node1 , Node<T>* node2){
+        if(node1 == NULL || node2 == NULL) return false;
+        return CompareData(node1->_data , node2->_data);
+    }
+    virtual bool CompareData(T* &data1 , T *data2){
+        return *data1 > *data2;
+    }
+    virtual bool CompareDataNode(T* data, Node<T> *node){
+        if(data == NULL || node == NULL) return false;
+        return CompareData(data, node->_data);
+    }
+    virtual bool isEqualData(T* data1, T *data2){
+        if(data1 == NULL || data2 == NULL) return false;
+        return *data1 == *data2;
+    }
+    virtual bool isEqualNode(Node<T>* node1 , Node<T>* node2){
+        if(node1 == NULL || node2 == NULL) return false;
+        return isEqualData(node1->_data , node2->_data);;
     }
 public:
     typedef void (*funcData)(T* data);
@@ -292,7 +316,7 @@ public:
         if(funcdata){
             funcdata(data->_data);
         }else{
-            cout << data->_data;
+            cout << *data->_data;
         }
         if(data->_right != NULL){InOrder(data->_right, funcdata );}
         return true;
@@ -339,14 +363,14 @@ public:
     Node<T>* Root(){
         return _root;
     }
-    Node<T>* FindNode(T *data,Node<T> *node){
+    Node<T>* FindNode(Node<T> *data,Node<T> *node){
         if (node == NULL){
             return NULL;
         }
         Node<T> *n;
         n = node;
-        while(n != NULL && *n->_data != *data){
-            if (*n->_data > *data){
+        while(n != NULL && !isEqualNode(n, data)){
+            if (CompareNode(n,data)){
                 n = n->_left;
             }else{
                 n = n->_right;
@@ -354,7 +378,7 @@ public:
         }
         return n;
     }
-    Node<T>* FindNode(T *data){
+    Node<T>* FindNode(Node<T> *data){
         return FindNode(data, _root);
     }
     Node<T>* AddNode(Node<T> *new_node){
@@ -367,7 +391,7 @@ public:
         node = _root;
         while(node != NULL ){
             node_parent = node;
-            if (*node->_data > *new_node->_data){
+            if (CompareNode(node, new_node)){
                 node = node->_left;
             }else{
                 node = node->_right;
@@ -375,7 +399,7 @@ public:
 
         }
         new_node->_parent = node_parent;
-        if(*node_parent->_data > *new_node->_data){
+        if(CompareNode(node_parent ,new_node)){
            node_parent->_left = new_node;
         }else{
            node_parent->_right = new_node;
@@ -579,6 +603,7 @@ public:
             if(t_node == NULL) return NULL;
             t_node->_left= t_node->_right = NULL;
             t_node->_height=1;
+            t_node->_size = 1;
             return t_node;
         }
         int d = min_node->getHeight() - max_node->getHeight();
@@ -599,7 +624,7 @@ public:
             }
         }
     }
-    bool Split( T *key, Node<T>* &source_node, Node<T>* &dest_min_node, Node<T>* &dest_max_node){
+    bool Split(Node<T> *key, Node<T>* &source_node, Node<T>* &dest_min_node, Node<T>* &dest_max_node){
         if(source_node == NULL){
             dest_min_node = NULL;
             dest_max_node = NULL;
@@ -609,10 +634,7 @@ public:
         Node<T> *source_right = source_node->_right;
         if(source_left != NULL) {source_left->_parent = NULL;}
         if(source_right != NULL) {source_right->_parent = NULL;}
-        source_node->_left = NULL;
-        source_node->_right = NULL;
-        updateHeight(source_node);
-        if(*key < *source_node->_data){
+         if(CompareNode(source_node, key)){
             Node<T> *node_min = NULL;
             Node<T> *node_max = NULL;
             Split(key, source_left,node_min,node_max);
@@ -664,9 +686,9 @@ void ExecF(Data* data){
 
 bool IsCorrect(myTree<Data> *tree, Data *d, Node<Data> *n){
     if(d == NULL || n == NULL || tree == NULL){return true;}
-    Node<Data> *node = tree->FindNode(d, n);
+    Node<Data> *node = tree->FindNode(new Node<Data>(d), n);
     if(node == NULL || node->_left == NULL){return true;}
-    if(tree->FindNode(d, node->_left) != NULL){
+    if(tree->FindNode(new Node<Data>(d), node->_left) != NULL){
         return false;
     }
     return IsCorrect(tree,d,node->_right);
@@ -684,140 +706,123 @@ long long foo(long long s, long long x){
     return (x+s)%1000000001;
 }
 
+template<class T>
+class myRope : protected myTree<T>{
+    typedef void (*funcData)(T* data);
+    typedef void (*funcDataUpdate)(T* d_data, T* s1_data, T* s2_data);
+private:
+      int _discardedNoded;
+      Node<T> *_lastElem;
+protected:
+    virtual bool CompareNode(Node<T>* node1 , Node<T>* node2){
+        if(node1 == NULL || node2 == NULL) return false;
+        int leftsize = node1->getSizeLeft();
+        int k = node2->_size;
+        if(leftsize+1 > k-_discardedNoded){
+            return true;
+        }else{
+            _discardedNoded = _discardedNoded + ++leftsize ;
+            return false;
+        }
+        return CompareData(node1->_data , node2->_data);
+    }
+    virtual bool CompareData(T* &data1 , T *data2){
+        return *data1 > *data2;
+    }
+    virtual bool CompareDataNode(T* data, Node<T> *node){
+        if(data == NULL || node == NULL) return false;
+        return CompareData(data, node->_data);
+    }
+    virtual bool isEqualData(T* data1, T *data2){
+        if(data1 == NULL || data2 == NULL) return false;
+        return *data1 == *data2;
+    }
+    virtual bool isEqualNode(Node<T>* node1 , Node<T>* node2){
+        if(node1 == NULL || node2 == NULL) return false;
+
+        return node1->getSizeLeft()+ 1 + _discardedNoded == node2->_size;
+    }
+public:
+    myRope(Node<T> *data = NULL, funcDataUpdate f = NULL): myTree<T>(data, f){
+        _discardedNoded =0;
+        _lastElem = this->_root;
+    }
+    void AddElem(T* elem){
+        Node<T> *new_node = new Node<T>(elem);
+        if(this->_root == NULL){
+            this->_root = new_node;
+            _lastElem = new_node;
+            return;
+        }
+        _lastElem->_right= new_node;
+        new_node->_parent = _lastElem;
+        _lastElem = new_node;
+        this->verifyTree(_lastElem->_parent);
+    }
+
+    void Reloc(int start, int end, int point){
+        Node<T> *left_t = NULL;
+        Node<T> *right_t = NULL;
+        Node<T> *center_right_t = NULL;
+        Node<T> *center_t= NULL;
+        Node<T> *source = this->_root;
+        Node<T> *x =new Node<T>(NULL);
+        x->_size = start;
+        Node<T> *y =new Node<T>(NULL);
+        y->_size = end+1-start;
+        Node<T> *p =new Node<T>(NULL);
+        p->_size = point;
+        this->_discardedNoded =0;
+        this->Split(x,source,left_t,center_right_t);
+        this->_root = center_right_t;
+        this->_discardedNoded =0;
+        this->Split(y,center_right_t,center_t,right_t);
+        this->_root = left_t;
+        Node<T> *t_key = this->DelNode(this->Max(left_t),false);
+        Node<T> *acum = this->AVLMergeWithRoot(this->_root,right_t, t_key);
+        this->_root = acum;
+        left_t = NULL;
+        center_right_t = NULL;
+        source = this->_root;
+        this->_discardedNoded =0;
+        this->Split(p,source,left_t,center_right_t);
+        this->_root = left_t;
+        t_key = this->DelNode(this->Max(left_t),false);
+        acum = this->AVLMergeWithRoot(this->_root,center_t, t_key);
+        this->_root = acum;
+        t_key = this->DelNode(this->Max(acum),false);
+        acum = this->AVLMergeWithRoot(this->_root,center_right_t, t_key);
+        this->_root = acum;
+    }
+    void PrintRope(){
+        this->InOrder();
+    }
+
+
+};
+
 
 int main()
 {
+   myRope<char> *myrope = new myRope<char>();
+string str1;
+cin >> str1;
+for(int i=0;i<str1.size();i++){
+   myrope->AddElem(&str1[i]);
+}
 
-    /*int m;
-    cin >> m;
-    if (m ==0){
-        cout<< "CORRECT";
-        return 0;
-    }
-    Node<Data> **arrNode = new Node<Data>*[m];
-    int **arrint = new int*[m];
-    for(int i=0;i<m;i++){
-        arrNode[i]=NULL;
-        arrint[i]=new int[3];
-        cin >> arrint[i][0] >> arrint[i][1] >> arrint[i][2];
-    }
-    for(int i=0;i<m;i++){
-        int n,l,r;
-        n =arrint[i][0];
-        l = arrint[i][1];
-        r = arrint[i][2];
-        if(arrNode[i]==NULL){
-            arrNode[i]= new Node<Data>(new Data(n));
-        }
-        if(l != -1 && arrNode[l]==NULL){
-            arrNode[l]= new Node<Data>(new Data(arrint[l][0]));
-        }
-        if(r !=-1 && arrNode[r]==NULL){
-            arrNode[r]= new Node<Data>(new Data(arrint[r][0]));
-        }
-        if(l != -1){
-            arrNode[i]->_left = arrNode[l];
-        }
-        if(r != -1){
-            arrNode[i]->_right = arrNode[r];
-        }
-    }
-
-    myTree<Data> *mytree = new myTree<Data>(arrNode[0]);
+int n;
+cin >> n;
+for(int c=0;c<n;c++){
+    int i, j , k;
+    cin >> i>> j >> k;
+    myrope->Reloc(i,j,k);
+    myrope->PrintRope();
+    cout << endl;
+}
 
 
-    mytree->InOrder(ExecF);
-
-    if(Data::b<0){
-        cout<< "ERROR";
-        return 0;
-    }
-    if(Data::b > 0){
-        cout<< "INCORRECT";
-        return 0;
-    }
-    bool b = true;
-    for (int i =0;i< arr.size();i++){
-        b&=IsCorrect(mytree, arr[i], mytree->Root());
-    }
-
-    cout<< (b?"CORRECT":"INCORRECT");*/
-    //--------------------------    ----------------------
-   /* Node<Data> **arrNode = new Node<Data>*[10];
-    for(int i=0;i<10;i++){
-        arrNode[i]=NULL;
-    }
-    myTree<Data> *mytree = new myTree<Data>(NULL, UpdateSum);
-    int m[]={4,2,6,1,3,5,7,7,6,4,3};
-    for(int i = 0; i< 7; i++){
-        arrNode[i] =new Node<Data>(new Data(m[i]));
-        mytree->AddNode(arrNode[i]);
-    }
-    Node<Data> *min_node = NULL;
-    Node<Data> *max_node = NULL;
-    Node<Data> *source = mytree->Root();
-    mytree->Split(new Data(4),source,min_node,max_node);
-    Node<Data> *min_node2 = NULL;
-    Node<Data> *max_node2 = NULL;
-    delete mytree;
-    mytree = new myTree<Data>(min_node,UpdateSum);
-    source = mytree->Root();
-    mytree->Split(new Data(1),source,min_node2,max_node2);*/
-
-    long long n, x, y;
-    long long s=0;
-    cin >> n;
-    string str;
-
-    myTree<Data> *mytree = new myTree<Data>(NULL, UpdateSum);
-
-    for(int i=0;i<n;i++){
-        cin >> str;
-        cin >> x;
-        if(str == "+"){
-            x = foo(s,x);
-            if(mytree->FindNode(new Data(x)) == NULL){mytree->AddNode(new Node<Data>(new Data(x)));}
-        }else if(str == "-"){
-            x = foo(s,x);
-            mytree->DelNode(mytree->FindNode(new Data(x)));
-        }else if(str == "?"){
-            x = foo(s,x);
-            if(mytree->FindNode(new Data(x)) == NULL){cout << "Not found"<<endl;}
-            else{cout << "Found"<<endl;}
-        }else if(str == "s"){
-            x = foo(s,x);
-            cin >> y;
-            y = foo(s,y);
-            Node<Data> *left_t = NULL;
-            Node<Data> *right_t = NULL;
-            Node<Data> *center_right_t = NULL;
-            Node<Data> *center_t= NULL;
-            Node<Data> *source = mytree->Root();
-            mytree->Split(new Data(x-1),source,left_t,center_right_t);
-            mytree->_root = center_right_t;
-            mytree->Split(new Data(y),center_right_t,center_t,right_t);
-            if(center_t==NULL){
-                s = 0;
-            }else{
-                s = center_t->_data->sum;
-            }
-            cout<< s << endl;
-            mytree->_root = left_t;
-            Node<Data> *t_key = mytree->DelNode(mytree->Max(left_t),false);
-            Node<Data> *acum = mytree->AVLMergeWithRoot(mytree->_root,center_t, t_key);
-            mytree->_root = acum;
-            t_key = mytree->DelNode(mytree->Max(acum),false);
-            acum = mytree->AVLMergeWithRoot(mytree->_root,right_t,t_key);
-            mytree->_root = acum;
-
-        }
-//cout<< "tree  :  ";
-//    mytree->InOrder();
-//             cout << endl;
-    }
-
-
-
+myrope->PrintRope();
 
 return 0;
 }
