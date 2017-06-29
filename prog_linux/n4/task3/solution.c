@@ -8,6 +8,7 @@ int main(int argi, char *argv[]){
  int i;
  char s;
  sprintf(buf,"%s",argv[1]);
+ printf("%s\n",buf);
  if (strcmp(buf,"1") == 0){
   printf("1\n");
  }else{
